@@ -473,6 +473,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let savedResults = []; // Array para guardar todos los resultados completados
 
+const timeToSeconds = (timeStr) => {
+    if (!timeStr || timeStr === '--' || timeStr === 'DNF' || timeStr === '') {
+        return null;
+    }
+    const parts = timeStr.split('.');
+    if (parts.length === 2) {
+        return parseFloat(parts[0]) + (parseFloat(parts[1]) / 1000);
+    }
+    return null;
+};
+
     // Estados del cronómetro 
     let currentClub = '';
     let currentDivision = '';
@@ -615,16 +626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }     
     
-const timeToSeconds = (timeStr) => {
-    if (!timeStr || timeStr === '--' || timeStr === 'DNF' || timeStr === '') {
-        return null;
-    }
-    const parts = timeStr.split('.');
-    if (parts.length === 2) {
-        return parseFloat(parts[0]) + (parseFloat(parts[1]) / 1000);
-    }
-    return null;
-};
+
 
     // CONTADOR TIMES (arriba del cronómetro) - SIEMPRE CON NOMBRE
     const timeCounterEl = document.getElementById('time-counter');
