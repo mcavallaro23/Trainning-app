@@ -1649,22 +1649,20 @@ const updateResultsList = () => {
     const dateStr = date.toISOString().slice(0, 10);
     const timeStr = date.toTimeString().slice(0, 5).replace(':', '-');
     const filename = `${result.test}_${result.club}_${result.division}_${dateStr}_${timeStr}.xlsx`;
-    
-    // Intentar compartir
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: blob.type })] })) {
-        const file = new File([blob], filename, { type: blob.type });
-        navigator.share({
-            files: [file],
-            title: `Results: ${result.test}`,
-            text: `Test results for ${result.test} - ${result.club} - ${result.division}`
-        }).catch(() => {
-            // Si falla, descargar
-            downloadExcel(blob, filename);
-        });
-    } else {
-        // Si no puede compartir archivos, descargar
+    // Intentar compartir (MISMA LÓGICA QUE SHARE ALL)
+if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: blob.type })] })) {
+    const file = new File([blob], filename, { type: blob.type });
+    navigator.share({
+        files: [file],
+        title: `Results: ${result.test}`,
+        text: `Test results for ${result.test} - ${result.club} - ${result.division}`
+    }).catch(() => {
         downloadExcel(blob, filename);
-    }
+    });
+} else {
+    downloadExcel(blob, filename);
+}
+    
 };
 
 
