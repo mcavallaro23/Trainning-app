@@ -615,6 +615,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }     
     
+const timeToSeconds = (timeStr) => {
+    if (!timeStr || timeStr === '--' || timeStr === 'DNF' || timeStr === '') {
+        return null;
+    }
+    const parts = timeStr.split('.');
+    if (parts.length === 2) {
+        return parseFloat(parts[0]) + (parseFloat(parts[1]) / 1000);
+    }
+    return null;
+};
+
     // CONTADOR TIMES (arriba del cronómetro) - SIEMPRE CON NOMBRE
     const timeCounterEl = document.getElementById('time-counter');
     if (timeCounterEl) {
@@ -1416,7 +1427,7 @@ const exportAllResultsToExcel = () => {
                         isFirst ? athleteName : '',
                         rep.repetition,
                         'SPLIT',
-                        ...(rep.splits || ['--', '--', '--', '--', '--', '--'])
+                        ...(rep.splits || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
                     ]);
                     
                     // Fila LAP
@@ -1425,7 +1436,7 @@ const exportAllResultsToExcel = () => {
                         '',
                         '',
                         'LAP',
-                        ...(rep.laps || ['--', '--', '--', '--', '--', '--'])
+                        ...(rep.laps || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
                     ]);
                 });
                 if (athlete.allRepetitions[0].repetition === 1) position++;
@@ -1437,7 +1448,7 @@ const exportAllResultsToExcel = () => {
                     position,
                     athleteName,
                     'SPLIT',
-                    ...(athlete.splits || ['--', '--', '--', '--', '--', '--'])
+                    ...(athlete.splits || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
                 ]);
                 
                 // Fila LAP
@@ -1445,7 +1456,7 @@ const exportAllResultsToExcel = () => {
                     '',
                     '',
                     'LAP',
-                    ...(athlete.laps || ['--', '--', '--', '--', '--', '--'])
+                    ...(athlete.laps || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
                 ]);
                 
                 position++;
@@ -1505,15 +1516,17 @@ const updateResultsList = () => {
     }
     
     // Mostrar resultados del más reciente al más viejo
-    savedResults.slice().reverse().forEach(result => {
+    savedResults.slice().reverse().forEach((result, index) => {
+        const resultNumber = savedResults.length - index;
         const resultItem = document.createElement('div');
         resultItem.className = 'result-item';
         
         resultItem.innerHTML = `
-            <div class="result-info">
-                <div class="result-title">${result.test} - ${result.club} - ${result.division}</div>
-                <div class="result-details">Completed: ${result.completionTime}</div>
-            </div>
+        <div class="result-number">${resultNumber}</div>
+        <div class="result-info">
+            <div class="result-title">${result.test} - ${result.club} - ${result.division}</div>
+            <div class="result-details">Completed: ${result.completionTime}</div>
+        </div>
             <div class="result-buttons">
                 <button class="view-result-btn" data-id="${result.id}">VIEW</button>
                 <button class="export-result-btn" data-id="${result.id}">SHARE</button>
@@ -1566,7 +1579,7 @@ const updateResultsList = () => {
                         isFirst ? athleteName : '',
                         rep.repetition,
                         'SPLIT',
-                        ...(rep.splits || ['--', '--', '--', '--', '--', '--'])
+                        ...(rep.splits || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
                     ]);
                 }
                 
@@ -1577,7 +1590,7 @@ const updateResultsList = () => {
                         '',
                         '',
                         'LAP',
-                        ...(rep.laps || ['--', '--', '--', '--', '--', '--'])
+                        ...(rep.laps || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
                     ]);
                 }
             });
@@ -1590,7 +1603,7 @@ const updateResultsList = () => {
                 position,
                 athleteName,
                 'SPLIT',
-                ...(athlete.splits || ['--', '--', '--', '--', '--', '--'])
+                ...(athlete.splits || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
             ]);
             
             // Fila LAP
@@ -1598,7 +1611,7 @@ const updateResultsList = () => {
                 '',
                 '',
                 'LAP',
-                ...(athlete.laps || ['--', '--', '--', '--', '--', '--'])
+                ...(athlete.laps || ['--', '--', '--', '--', '--', '--']).map(timeToSeconds)
             ]);
             
             position++;
