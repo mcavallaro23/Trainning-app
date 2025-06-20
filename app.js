@@ -1359,6 +1359,129 @@ startBtn.addEventListener('click', () => {
     });
 };
 
+const exportAllResultsToExcel = () => {
+    if (savedResults.length === 0) {
+        alert('No hay resultados para exportar');
+        return;
+    }
+    
+    // Crear workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Ordenar resultados del más viejo al más nuevo
+    const sortedResults = [...savedResults].sort((a, b) => a.id - b.id);
+    
+    // Procesar cada resultado
+    sortedResults.forEach((result, index) => {
+        const config = testConfig[result.test];
+        const isCombiTest = config && config.times > 1 && config.repetitions > 1;
+        
+        // Preparar datos para esta hoja
+        const sheetData = [];
+        
+        // Título
+        sheetData.push([`${result.test} - ${result.club} - ${result.division}`]);
+        sheetData.push([`Completado: ${result.completionTime}`]);
+        sheetData.push([]); // Línea vacía
+        
+        // Headers
+        if (isCombiTest) {
+            sheetData.push(['POS', 'ATHLETE', 'REP', 'TYPE', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6']);
+        } else {
+            sheetData.push(['POS', 'ATHLETE', 'TYPE', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6']);
+        }
+        
+        // Datos de atletas
+        let position = 1;
+        result.athletes.forEach((athlete) => {
+            if (isCombiTest && athlete.isCombiTest && athlete.allRepetitions) {
+                athlete.allRepetitions.forEach((rep) => {
+                    const athleteName = athlete.name.replace('-DNF', '');
+                    const isFirst = rep.repetition === 1;
+                    
+                    // Fila SPLIT
+                    sheetData.push([
+                        isFirst ? position : '',
+                        isFirst ? athleteName : '',
+                        rep.repetition,
+                        'SPLIT',
+                        ...(rep.splits || ['--', '--', '--', '--', '--', '--'])
+                    ]);
+                    
+                    // Fila LAP
+                    sheetData.push([
+                        '',
+                        '',
+                        '',
+                        'LAP',
+                        ...(rep.laps || ['--', '--', '--', '--', '--', '--'])
+                    ]);
+                });
+                if (athlete.allRepetitions[0].repetition === 1) position++;
+            } else {
+                const athleteName = athlete.name.replace('-DNF', '');
+                
+                // Fila SPLIT
+                sheetData.push([
+                    position,
+                    athleteName,
+                    'SPLIT',
+                    ...(athlete.splits || ['--', '--', '--', '--', '--', '--'])
+                ]);
+                
+                // Fila LAP
+                sheetData.push([
+                    '',
+                    '',
+                    'LAP',
+                    ...(athlete.laps || ['--', '--', '--', '--', '--', '--'])
+                ]);
+                
+                position++;
+            }
+        });
+        
+        // Config del test
+        sheetData.push([]);
+        sheetData.push(['Test Configuration']);
+        sheetData.push(['Times:', config?.times || 'N/A']);
+        sheetData.push(['Repetitions:', config?.repetitions || 'N/A']);
+        sheetData.push(['Recovery:', config?.recovery || 'N/A', 'seconds']);
+        sheetData.push(['Distances:', config?.distances || 'N/A', 'meters']);
+        
+        // Crear hoja
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        
+        // Nombre de la hoja: número del 1 al N
+        const sheetName = (index + 1).toString();
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+    
+    // Generar archivo
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/octet-stream'});
+    
+    // Nombre del archivo
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10);
+    const timeStr = date.toTimeString().slice(0, 5).replace(':', '-');
+    const filename = `All_Results_${dateStr}_${timeStr}.xlsx`;
+    
+    // Intentar compartir
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: blob.type })] })) {
+        const file = new File([blob], filename, { type: blob.type });
+        navigator.share({
+            files: [file],
+            title: 'All Test Results',
+            text: `All test results exported on ${dateStr}`
+        }).catch(() => {
+            downloadExcel(blob, filename);
+        });
+    } else {
+        downloadExcel(blob, filename);
+    }
+};
+
 const updateResultsList = () => {
     const resultsList = document.getElementById('results-list');
     if (!resultsList) return;
@@ -1534,6 +1657,12 @@ const downloadExcel = (blob, filename) => {
             }
         });
     });
+// Event listener para SHARE ALL
+const shareAllBtn = document.getElementById('share-all-btn');
+if (shareAllBtn) {
+    shareAllBtn.disabled = savedResults.length === 0;
+    shareAllBtn.onclick = exportAllResultsToExcel;
+}
 };
 
 const showSavedResult = (result) => {

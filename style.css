@@ -928,3 +928,22 @@ select:disabled, button:disabled {
 .export-result-btn:hover {
     background: #218838;
 }
+.share-all-btn {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.share-all-btn:hover {
+    background: #138496;
+}
+
+.share-all-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
