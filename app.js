@@ -474,9 +474,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     let savedResults = []; // Array para guardar todos los resultados completados
 
 const timeToSeconds = (timeStr) => {
-    if (!timeStr || timeStr === '--' || timeStr === 'DNF' || timeStr === '') {
+    if (typeof timeStr === 'number') return timeStr;
+    
+    // MANTENER DNF COMO TEXTO
+    if (timeStr === 'DNF') return 'DNF';
+    
+    if (!timeStr || typeof timeStr !== 'string' || timeStr === '--' || timeStr === '') {
         return null;
     }
+    
     const parts = timeStr.split('.');
     if (parts.length === 2) {
         return parseFloat(parts[0]) + (parseFloat(parts[1]) / 1000);
