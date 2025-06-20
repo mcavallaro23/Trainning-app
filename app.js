@@ -1400,75 +1400,137 @@ const updateResultsList = () => {
         });
     });
     
+    const exportToExcelAndShare = (result) => {
+    const config = testConfig[result.test];
+    const isCombiTest = config && config.times > 1 && config.repetitions > 1;
+    
+    // Crear workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Preparar datos para Excel
+    const excelData = [];
+    
+    // Headers
+    if (isCombiTest) {
+        excelData.push(['POS', 'ATHLETE', 'REP', 'TYPE', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6']);
+    } else {
+        excelData.push(['POS', 'ATHLETE', 'TYPE', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6']);
+    }
+    
+    // Procesar datos
+    let position = 1;
+    result.athletes.forEach((athlete) => {
+        if (isCombiTest && athlete.isCombiTest && athlete.allRepetitions) {
+            athlete.allRepetitions.forEach((rep) => {
+                const athleteName = athlete.name.replace('-DNF', '');
+                const isFirst = rep.repetition === 1;
+                
+                // Fila SPLIT
+                if (isCombiTest) {
+                    excelData.push([
+                        isFirst ? position : '',
+                        isFirst ? athleteName : '',
+                        rep.repetition,
+                        'SPLIT',
+                        ...(rep.splits || ['--', '--', '--', '--', '--', '--'])
+                    ]);
+                }
+                
+                // Fila LAP
+                if (isCombiTest) {
+                    excelData.push([
+                        '',
+                        '',
+                        '',
+                        'LAP',
+                        ...(rep.laps || ['--', '--', '--', '--', '--', '--'])
+                    ]);
+                }
+            });
+            if (isFirst) position++;
+        } else {
+            const athleteName = athlete.name.replace('-DNF', '');
+            
+            // Fila SPLIT
+            excelData.push([
+                position,
+                athleteName,
+                'SPLIT',
+                ...(athlete.splits || ['--', '--', '--', '--', '--', '--'])
+            ]);
+            
+            // Fila LAP
+            excelData.push([
+                '',
+                '',
+                'LAP',
+                ...(athlete.laps || ['--', '--', '--', '--', '--', '--'])
+            ]);
+            
+            position++;
+        }
+    });
+    
+    // Agregar info del test
+    excelData.push([]);
+    excelData.push(['Test Configuration']);
+    excelData.push(['Times:', config?.times || 'N/A']);
+    excelData.push(['Repetitions:', config?.repetitions || 'N/A']);
+    excelData.push(['Recovery:', config?.recovery || 'N/A', 'seconds']);
+    excelData.push(['Distances:', config?.distances || 'N/A', 'meters']);
+    excelData.push([]);
+    excelData.push(['Completed:', result.completionTime]);
+    
+    // Crear hoja
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Results');
+    
+    // Generar archivo
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/octet-stream'});
+    
+    // Nombre del archivo
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10);
+    const timeStr = date.toTimeString().slice(0, 5).replace(':', '-');
+    const filename = `${result.test}_${result.club}_${result.division}_${dateStr}_${timeStr}.xlsx`;
+    
+    // Intentar compartir
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: blob.type })] })) {
+        const file = new File([blob], filename, { type: blob.type });
+        navigator.share({
+            files: [file],
+            title: `Results: ${result.test}`,
+            text: `Test results for ${result.test} - ${result.club} - ${result.division}`
+        }).catch(() => {
+            // Si falla, descargar
+            downloadExcel(blob, filename);
+        });
+    } else {
+        // Si no puede compartir archivos, descargar
+        downloadExcel(blob, filename);
+    }
+};
+
+const downloadExcel = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+
     // Event listeners para los botones SHARE
     document.querySelectorAll('.export-result-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', (e) => {
             const resultId = parseInt(e.target.dataset.id);
             const result = savedResults.find(r => r.id === resultId);
             if (result) {
-                const config = testConfig[result.test];
-                const isCombiTest = config && config.times > 1 && config.repetitions > 1;
-                
-                // Crear texto formateado
-                let textContent = `🏃 RESULTADOS DE TEST 🏃\n`;
-                textContent += `${result.test} - ${result.club} - ${result.division}\n`;
-                textContent += `Completado: ${result.completionTime}\n`;
-                textContent += `${'─'.repeat(30)}\n\n`;
-                
-                // Procesar atletas
-                let position = 1;
-                result.athletes.forEach((athlete) => {
-                    const athleteName = athlete.name.replace('-DNF', '');
-                    
-                    if (athlete.status === 'DNF') {
-                        textContent += `${position}. ${athleteName}: DNF\n`;
-                    } else if (isCombiTest && athlete.isCombiTest) {
-                        textContent += `${position}. ${athleteName}\n`;
-                        athlete.allRepetitions.forEach((rep) => {
-                            const lastSplit = rep.splits[rep.splits.length - 1];
-                            textContent += `   Rep ${rep.repetition}: ${lastSplit}\n`;
-                        });
-                        textContent += `   TOTAL: ${athlete.formattedTime}\n`;
-                    } else {
-                        const bestTime = athlete.formattedTime || athlete.splits.find(s => s !== '--') || 'N/A';
-                        textContent += `${position}. ${athleteName}: ${bestTime}\n`;
-                    }
-                    position++;
-                });
-                
-                // Configuración
-                textContent += `\n${'─'.repeat(30)}\n`;
-                textContent += `⚙️ Configuración:\n`;
-                textContent += `Times: ${config?.times || 'N/A'}\n`;
-                textContent += `Repetitions: ${config?.repetitions || 'N/A'}\n`;
-                textContent += `Recovery: ${config?.recovery || 'N/A'}s\n`;
-                
-                // Copiar o compartir
-                if (navigator.share) {
-                    navigator.share({
-                        title: `Resultados: ${result.test}`,
-                        text: textContent
-                    }).catch(() => {
-                        // Si cancela, copiar
-                        navigator.clipboard.writeText(textContent).then(() => {
-                            alert('✅ Resultados copiados!');
-                        });
-                    });
-                } else {
-                    // En desktop, copiar
-                    navigator.clipboard.writeText(textContent).then(() => {
-                        alert('✅ Resultados copiados!\n\nPodés pegarlos en WhatsApp, Email, etc.');
-                    }).catch(() => {
-                        // Fallback viejo
-                        const textArea = document.createElement("textarea");
-                        textArea.value = textContent;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                        alert('✅ Resultados copiados!');
-                    });
-                }
+                exportToExcelAndShare(result);
             }
         });
     });
