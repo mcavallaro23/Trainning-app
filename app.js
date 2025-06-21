@@ -938,6 +938,8 @@ const timeToSeconds = (timeStr) => {
         chronoEl.style.fontSize = '48px';
         chronoEl.style.color = '#fff';
         chronoEl.classList.remove('recovery');
+        startBtn.classList.remove('timing');
+        startBtn.classList.add('enabled');
         //currentAthleteEl.textContent = '--';
         resetDisplay();
         
@@ -974,6 +976,8 @@ const timeToSeconds = (timeStr) => {
         chronoEl.style.fontSize = '48px';
         chronoEl.style.color = '#fff';
         chronoEl.classList.remove('recovery');
+        startBtn.classList.remove('timing');
+        startBtn.classList.add('enabled');
         //currentAthleteEl.textContent = '--';
         resetDisplay();
         
@@ -1011,6 +1015,8 @@ const timeToSeconds = (timeStr) => {
         chronoEl.style.fontSize = '48px';
         chronoEl.style.color = '#fff';
         chronoEl.classList.remove('recovery');
+        startBtn.classList.remove('timing');
+        startBtn.classList.add('enabled');
         //currentAthleteEl.textContent = '--';
         resetDisplay();
         
