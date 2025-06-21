@@ -1602,7 +1602,7 @@ const updateResultsList = () => {
                     ]);
                 }
             });
-            if (isFirst) position++;
+            if (athlete.allRepetitions[0].repetition === 1) position++;
         } else {
             const athleteName = athlete.name.replace('-DNF', '');
             
