@@ -291,6 +291,70 @@ async function deleteAthleteFromSupabase(clubName, divisionName, athleteName) {
     }
 }
 
+
+// ========================================
+// FUNCIONES PARA RESULTS BACKUP EN SUPABASE
+// ========================================
+
+// Guardar backup de resultados
+async function saveResultsBackupToSupabase() {
+    try {
+        // Primero borrar backup anterior del usuario
+        await supabase
+            .from('results_backup')
+            .delete()
+            .eq('user_id', currentUser.id);
+            
+        // Guardar nuevo backup
+        const { data, error } = await supabase
+            .from('results_backup')
+            .insert([
+                { 
+                    user_id: currentUser.id,
+                    saved_results: savedResults
+                }
+            ])
+            .select();
+            
+        if (error) {
+            console.error('Error guardando backup:', error);
+            return false;
+        }
+        
+        console.log('Backup guardado en Supabase');
+        return true;
+    } catch (error) {
+        console.error('Error guardando backup:', error);
+        return false;
+    }
+}
+
+// Recuperar backup de resultados
+async function loadResultsBackupFromSupabase() {
+    try {
+        const { data, error } = await supabase
+            .from('results_backup')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+        if (error) {
+            console.error('Error cargando backup:', error);
+            return null;
+        }
+        
+        if (data && data.length > 0) {
+            return data[0];
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error cargando backup:', error);
+        return null;
+    }
+}
+
 // ========================================
 // FUNCIONES PARA TESTS EN SUPABASE
 // ========================================
@@ -1398,9 +1462,10 @@ const downloadExcel = (blob, filename) => {
 const exportAllResultsToExcel = () => {
     if (savedResults.length === 0) {
         alert('No hay resultados para exportar');
-        return;
+        return;        
     }
-    
+    // Guardar backup en Supabase antes de compartir/descargar
+        saveResultsBackupToSupabase();
     // Crear workbook
     const wb = XLSX.utils.book_new();
     
